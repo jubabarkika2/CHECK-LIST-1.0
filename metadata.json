@@ -1,0 +1,7 @@
+{
+  "name": "Checklist Restaurante - Salão & Cozinha",
+  "description": "Sistema completo de checklist operacional com comprovação por fotos, controle por setores (Salão, Cozinha, Bar), painel do gestor protegido por PIN e envio automático de relatórios formatados para WhatsApp.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
