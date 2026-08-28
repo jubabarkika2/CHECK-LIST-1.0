@@ -54,7 +54,8 @@ import {
   RotateCcw,
   ChefHat,
   UtensilsCrossed,
-  Info
+  Info,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function App() {
@@ -218,6 +219,15 @@ export default function App() {
     localStorage.removeItem('rest_active_staff_name');
     localStorage.removeItem('rest_active_staff_role');
     handleResetChecklist();
+  };
+
+  // Exit current staff session to allow changing employee / return to identification
+  const handleExitStaff = () => {
+    setStaffName('');
+    setStaffRole('Colaborador');
+    localStorage.removeItem('rest_active_staff_name');
+    localStorage.removeItem('rest_active_staff_role');
+    setIsStaffModalOpen(true);
   };
 
   // Handle staff identification
@@ -457,7 +467,7 @@ export default function App() {
         onToggleManagerMode={handleToggleManagerMode}
         settings={settings}
         activeStaffName={staffName}
-        onChangeStaffName={() => setIsStaffModalOpen(true)}
+        onChangeStaffName={handleExitStaff}
       />
 
       {/* Main Content Area */}
@@ -485,6 +495,40 @@ export default function App() {
           // OPERATIONAL EMPLOYEE CHECKLIST VIEW
           <div className="space-y-6">
             
+            {/* Active Staff Banner if staff identified (with Voltar / Sair button) */}
+            {staffName && (
+              <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold flex-shrink-0 shadow-2xs">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm sm:text-base text-slate-900 truncate">
+                        {staffName}
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        {staffRole}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 truncate">
+                      Colaborador ativo • Entrou por engano?
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExitStaff}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-300 font-bold text-xs flex items-center gap-1.5 transition flex-shrink-0 shadow-2xs"
+                  title="Sair para tela de identificação / Trocar funcionário"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Voltar / Sair</span>
+                </button>
+              </div>
+            )}
+
             {/* Staff Notification Banner if no staff name */}
             {!staffName && settings.requireStaffName && (
               <div 

@@ -64,11 +64,14 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onChangeStaffName}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-                title="Trocar nome do funcionário"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 hover:text-white border border-slate-700 transition shadow-xs"
+                title="Voltar para a tela de identificação / Trocar funcionário"
               >
                 <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{activeStaffName}</span>
+                <span className="max-w-[100px] sm:max-w-[140px] truncate">{activeStaffName}</span>
+                <span className="text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">
+                  Voltar
+                </span>
               </button>
             )}
 

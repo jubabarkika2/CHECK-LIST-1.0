@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, X, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Lock, X, KeyRound, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface PinModalProps {
@@ -180,6 +180,18 @@ export const PinModal: React.FC<PinModalProps> = ({
                 className="h-12 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-medium text-slate-400 hover:text-slate-200 transition border border-slate-700/30 flex items-center justify-center"
               >
                 ⌫
+              </button>
+            </div>
+
+            {/* Back Button */}
+            <div className="w-full max-w-[240px] mt-4 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 active:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-slate-700/40"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Voltar ao Checklist</span>
               </button>
             </div>
           </div>

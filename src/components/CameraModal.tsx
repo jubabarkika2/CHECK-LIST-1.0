@@ -7,7 +7,8 @@ import {
   Upload, 
   AlertCircle, 
   Sparkles,
-  SwitchCamera
+  SwitchCamera,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { processAndWatermarkImage } from '../utils/imageUtils';
@@ -193,9 +194,10 @@ export const CameraModal: React.FC<CameraModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition flex-shrink-0 ml-2"
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white transition flex items-center gap-1 text-xs font-semibold flex-shrink-0 ml-2 border border-slate-700/50"
             >
-              <X className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
+              <span>Voltar</span>
             </button>
           </div>
 

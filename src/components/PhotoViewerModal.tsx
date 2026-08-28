@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Download, Calendar, CheckCircle2, UserCheck, Sparkles } from 'lucide-react';
+import { X, Download, Calendar, CheckCircle2, UserCheck, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface PhotoViewerModalProps {
@@ -65,9 +65,10 @@ export const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold border border-slate-700/50"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>Voltar</span>
               </button>
             </div>
           </div>
