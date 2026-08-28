@@ -25,7 +25,12 @@ import {
   fetchSettingsFromServer,
   fetchSectorsFromServer,
   fetchTasksFromServer,
-  fetchCollaboratorsFromServer 
+  fetchCollaboratorsFromServer,
+  subscribeToSettings,
+  subscribeToCollaborators,
+  subscribeToSectors,
+  subscribeToTasks,
+  subscribeToSubmissions
 } from './utils/storage';
 import { Header } from './components/Header';
 import { PinModal } from './components/PinModal';
@@ -104,14 +109,40 @@ export default function App() {
   // Printable View state
   const [printingSubmission, setPrintingSubmission] = useState<ChecklistSubmission | null>(null);
 
-  // Load submissions from IndexedDB / Server DB on startup
+  // Load and subscribe to real-time Cloud updates across all devices
   useEffect(() => {
     loadSubmissions();
-    // Background sync with server backend database
+
+    // Initial fetch from cloud/server
     fetchSettingsFromServer().then((s) => s && setSettings(s));
     fetchSectorsFromServer().then((sec) => sec && setSectors(sec));
     fetchTasksFromServer().then((t) => t && setTasks(t));
     fetchCollaboratorsFromServer().then((c) => c && setCollaborators(c));
+
+    // Real-time Cloud listeners (syncs instant updates across all phones/tablets/desktops)
+    const unsubSettings = subscribeToSettings((newSettings) => {
+      setSettings(newSettings);
+    });
+    const unsubCollaborators = subscribeToCollaborators((newCollabs) => {
+      setCollaborators(newCollabs);
+    });
+    const unsubSectors = subscribeToSectors((newSectors) => {
+      setSectors(newSectors);
+    });
+    const unsubTasks = subscribeToTasks((newTasks) => {
+      setTasks(newTasks);
+    });
+    const unsubSubmissions = subscribeToSubmissions((newSubs) => {
+      setSubmissions(newSubs);
+    });
+
+    return () => {
+      unsubSettings();
+      unsubCollaborators();
+      unsubSectors();
+      unsubTasks();
+      unsubSubmissions();
+    };
   }, []);
 
   const loadSubmissions = async () => {

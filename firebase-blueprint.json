@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "RestaurantSettings": {
+      "title": "RestaurantSettings",
+      "description": "General settings for the restaurant checklist system",
+      "type": "object",
+      "properties": {
+        "restaurantName": { "type": "string" },
+        "managerPin": { "type": "string" },
+        "managerWhatsapp": { "type": "string" },
+        "notificationEnabled": { "type": "boolean" },
+        "requirePhotos": { "type": "boolean" },
+        "autoSendWhatsapp": { "type": "boolean" },
+        "minPhotosPerSector": { "type": "number" },
+        "allowManualStaff": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["restaurantName", "managerPin"]
+    },
+    "Collaborator": {
+      "title": "Collaborator",
+      "description": "A registered staff member with pin and role",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "pin": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "role", "pin", "active"]
+    },
+    "Sector": {
+      "title": "Sector",
+      "description": "A restaurant sector",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "name", "order"]
+    },
+    "TaskTemplate": {
+      "title": "TaskTemplate",
+      "description": "A task template assigned to a sector and shifts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sectorId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "shifts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requirePhoto": { "type": "boolean" },
+        "critical": { "type": "boolean" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "sectorId", "title", "shifts", "order"]
+    },
+    "ChecklistSubmission": {
+      "title": "ChecklistSubmission",
+      "description": "Completed checklist audit submission",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "submissionCode": { "type": "string" },
+        "sectorId": { "type": "string" },
+        "sectorName": { "type": "string" },
+        "shift": { "type": "string" },
+        "responsibleName": { "type": "string" },
+        "responsibleRole": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "totalTasks": { "type": "number" },
+        "completedTasksCount": { "type": "number" },
+        "photosCount": { "type": "number" },
+        "tasks": { "type": "array", "items": { "type": "object" } },
+        "generalNotes": { "type": "string" },
+        "managerReview": { "type": "object" }
+      },
+      "required": ["id", "sectorId", "shift", "responsibleName", "completedAt"]
+    }
+  },
+  "firestore": {
+    "/config/settings": {
+      "schema": "RestaurantSettings",
+      "description": "Global restaurant settings"
+    },
+    "/collaborators/{collaboratorId}": {
+      "schema": "Collaborator",
+      "description": "All restaurant staff and credentials"
+    },
+    "/sectors/{sectorId}": {
+      "schema": "Sector",
+      "description": "All configured sectors"
+    },
+    "/tasks/{taskId}": {
+      "schema": "TaskTemplate",
+      "description": "All configured checklist tasks"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "ChecklistSubmission",
+      "description": "Completed checklist submissions"
+    }
+  }
+}

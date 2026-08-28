@@ -1,3 +1,5 @@
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, updateDoc, query, orderBy, Unsubscribe } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Sector, TaskTemplate, ManagerSettings, ChecklistSubmission, TaskCompletion, Collaborator } from '../types';
 import { DEFAULT_SECTORS, DEFAULT_TASKS, DEFAULT_SETTINGS, DEFAULT_COLLABORATORS } from '../data/defaultData';
 
@@ -13,7 +15,7 @@ const DB_NAME = 'RestaurantChecklistDB';
 const DB_VERSION = 1;
 const STORE_SUBMISSIONS = 'submissions';
 
-// IndexedDB Helper
+// IndexedDB Helper for fast local caching
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
@@ -22,9 +24,9 @@ function openDB(): Promise<IDBDatabase> {
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_SUBMISSIONS)) {
-        const store = db.createObjectStore(STORE_SUBMISSIONS, { keyPath: 'id' });
+      const idb = request.result;
+      if (!idb.objectStoreNames.contains(STORE_SUBMISSIONS)) {
+        const store = idb.createObjectStore(STORE_SUBMISSIONS, { keyPath: 'id' });
         store.createIndex('completedAt', 'completedAt', { unique: false });
         store.createIndex('sectorId', 'sectorId', { unique: false });
       }
@@ -35,30 +37,175 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // ==========================================
-// SERVER API SYNC UTILITIES
+// REAL-TIME FIRESTORE SUBSCRIPTIONS
+// ==========================================
+
+export function subscribeToSettings(onUpdate: (settings: ManagerSettings) => void): Unsubscribe {
+  try {
+    const docRef = doc(db, 'config', 'settings');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as ManagerSettings;
+        if (data && data.restaurantName) {
+          saveStoredSettings(data, false, false);
+          onUpdate(data);
+        }
+      }
+    }, (error) => {
+      console.warn('Firestore settings subscription error:', error);
+    });
+  } catch (e) {
+    console.warn('Firestore subscription unavailable:', e);
+    return () => {};
+  }
+}
+
+export function subscribeToCollaborators(onUpdate: (collaborators: Collaborator[]) => void): Unsubscribe {
+  try {
+    const docRef = doc(db, 'config', 'collaborators');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as { list?: Collaborator[] };
+        if (data && Array.isArray(data.list)) {
+          saveStoredCollaborators(data.list, false, false);
+          onUpdate(data.list);
+        }
+      }
+    }, (error) => {
+      console.warn('Firestore collaborators subscription error:', error);
+    });
+  } catch (e) {
+    console.warn('Firestore subscription unavailable:', e);
+    return () => {};
+  }
+}
+
+export function subscribeToSectors(onUpdate: (sectors: Sector[]) => void): Unsubscribe {
+  try {
+    const docRef = doc(db, 'config', 'sectors');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as { list?: Sector[] };
+        if (data && Array.isArray(data.list) && data.list.length > 0) {
+          saveStoredSectors(data.list, false, false);
+          onUpdate(data.list);
+        }
+      }
+    }, (error) => {
+      console.warn('Firestore sectors subscription error:', error);
+    });
+  } catch (e) {
+    console.warn('Firestore subscription unavailable:', e);
+    return () => {};
+  }
+}
+
+export function subscribeToTasks(onUpdate: (tasks: TaskTemplate[]) => void): Unsubscribe {
+  try {
+    const docRef = doc(db, 'config', 'tasks');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as { list?: TaskTemplate[] };
+        if (data && Array.isArray(data.list) && data.list.length > 0) {
+          saveStoredTasks(data.list, false, false);
+          onUpdate(data.list);
+        }
+      }
+    }, (error) => {
+      console.warn('Firestore tasks subscription error:', error);
+    });
+  } catch (e) {
+    console.warn('Firestore subscription unavailable:', e);
+    return () => {};
+  }
+}
+
+export function subscribeToSubmissions(onUpdate: (submissions: ChecklistSubmission[]) => void): Unsubscribe {
+  try {
+    const collRef = collection(db, 'submissions');
+    const q = query(collRef, orderBy('completedAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const list: ChecklistSubmission[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push(docSnap.data() as ChecklistSubmission);
+      });
+      if (list.length > 0) {
+        syncSubmissionsToIndexedDB(list).catch(() => {});
+        onUpdate(list);
+      }
+    }, (error) => {
+      console.warn('Firestore submissions subscription error:', error);
+    });
+  } catch (e) {
+    console.warn('Firestore subscription unavailable:', e);
+    return () => {};
+  }
+}
+
+// ==========================================
+// INITIAL SERVER & CLOUD FETCH
 // ==========================================
 
 export async function fetchSettingsFromServer(): Promise<ManagerSettings | null> {
+  // 1. Try Firestore
+  try {
+    const docRef = doc(db, 'config', 'settings');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as ManagerSettings;
+      if (data && data.restaurantName) {
+        saveStoredSettings(data, false, false);
+        return data;
+      }
+    } else {
+      // Initialize with defaults if empty in cloud
+      const defaults = getStoredSettings();
+      await setDoc(docRef, defaults);
+    }
+  } catch (e) {
+    // Cloud fallback
+  }
+
+  // 2. Try Node/Express API
   try {
     const res = await fetch('/api/settings');
     if (res.ok) {
       const data = await res.json();
-      saveStoredSettings(data, false);
+      saveStoredSettings(data, false, false);
       return data;
     }
   } catch (e) {
-    // Silent catch for offline or dev startup
+    // Silent catch
   }
   return null;
 }
 
 export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
+  // 1. Try Firestore
+  try {
+    const docRef = doc(db, 'config', 'sectors');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as { list?: Sector[] };
+      if (data && Array.isArray(data.list) && data.list.length > 0) {
+        saveStoredSectors(data.list, false, false);
+        return data.list;
+      }
+    } else {
+      const defaults = getStoredSectors();
+      await setDoc(docRef, { list: defaults });
+    }
+  } catch (e) {
+    // Cloud fallback
+  }
+
+  // 2. Try Node API
   try {
     const res = await fetch('/api/sectors');
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        saveStoredSectors(data, false);
+        saveStoredSectors(data, false, false);
         return data;
       }
     }
@@ -69,12 +216,31 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
 }
 
 export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
+  // 1. Try Firestore
+  try {
+    const docRef = doc(db, 'config', 'tasks');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as { list?: TaskTemplate[] };
+      if (data && Array.isArray(data.list) && data.list.length > 0) {
+        saveStoredTasks(data.list, false, false);
+        return data.list;
+      }
+    } else {
+      const defaults = getStoredTasks();
+      await setDoc(docRef, { list: defaults });
+    }
+  } catch (e) {
+    // Cloud fallback
+  }
+
+  // 2. Try Node API
   try {
     const res = await fetch('/api/tasks');
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        saveStoredTasks(data, false);
+        saveStoredTasks(data, false, false);
         return data;
       }
     }
@@ -85,12 +251,31 @@ export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
 }
 
 export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | null> {
+  // 1. Try Firestore
+  try {
+    const docRef = doc(db, 'config', 'collaborators');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as { list?: Collaborator[] };
+      if (data && Array.isArray(data.list) && data.list.length > 0) {
+        saveStoredCollaborators(data.list, false, false);
+        return data.list;
+      }
+    } else {
+      const defaults = getStoredCollaborators();
+      await setDoc(docRef, { list: defaults });
+    }
+  } catch (e) {
+    // Cloud fallback
+  }
+
+  // 2. Try Node API
   try {
     const res = await fetch('/api/collaborators');
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        saveStoredCollaborators(data, false);
+        saveStoredCollaborators(data, false, false);
         return data;
       }
     }
@@ -100,7 +285,10 @@ export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | n
   return null;
 }
 
-// Storage methods for Settings
+// ==========================================
+// LOCAL STORAGE & CLOUD SAVE METHODS
+// ==========================================
+
 export function getStoredSettings(): ManagerSettings {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -113,11 +301,22 @@ export function getStoredSettings(): ManagerSettings {
   return DEFAULT_SETTINGS;
 }
 
-export function saveStoredSettings(settings: ManagerSettings, syncToServer = true): void {
+export function saveStoredSettings(settings: ManagerSettings, syncToServer = true, syncToFirestore = true): void {
   try {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   } catch (e) {
     console.error('Error saving settings to localStorage', e);
+  }
+
+  if (syncToFirestore) {
+    try {
+      const docRef = doc(db, 'config', 'settings');
+      setDoc(docRef, settings, { merge: true }).catch((err) => {
+        console.warn('Failed to sync settings to Firestore', err);
+      });
+    } catch (e) {
+      // Silent catch
+    }
   }
 
   if (syncToServer) {
@@ -129,7 +328,6 @@ export function saveStoredSettings(settings: ManagerSettings, syncToServer = tru
   }
 }
 
-// Storage methods for Sectors
 export function getStoredSectors(): Sector[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.SECTORS);
@@ -143,11 +341,22 @@ export function getStoredSectors(): Sector[] {
   return DEFAULT_SECTORS;
 }
 
-export function saveStoredSectors(sectors: Sector[], syncToServer = true): void {
+export function saveStoredSectors(sectors: Sector[], syncToServer = true, syncToFirestore = true): void {
   try {
     localStorage.setItem(STORAGE_KEYS.SECTORS, JSON.stringify(sectors));
   } catch (e) {
     console.error('Error saving sectors to localStorage', e);
+  }
+
+  if (syncToFirestore) {
+    try {
+      const docRef = doc(db, 'config', 'sectors');
+      setDoc(docRef, { list: sectors }).catch((err) => {
+        console.warn('Failed to sync sectors to Firestore', err);
+      });
+    } catch (e) {
+      // Silent catch
+    }
   }
 
   if (syncToServer) {
@@ -159,7 +368,6 @@ export function saveStoredSectors(sectors: Sector[], syncToServer = true): void 
   }
 }
 
-// Storage methods for Tasks
 export function getStoredTasks(): TaskTemplate[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.TASKS);
@@ -173,11 +381,22 @@ export function getStoredTasks(): TaskTemplate[] {
   return DEFAULT_TASKS;
 }
 
-export function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true): void {
+export function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true, syncToFirestore = true): void {
   try {
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
   } catch (e) {
     console.error('Error saving tasks to localStorage', e);
+  }
+
+  if (syncToFirestore) {
+    try {
+      const docRef = doc(db, 'config', 'tasks');
+      setDoc(docRef, { list: tasks }).catch((err) => {
+        console.warn('Failed to sync tasks to Firestore', err);
+      });
+    } catch (e) {
+      // Silent catch
+    }
   }
 
   if (syncToServer) {
@@ -189,7 +408,6 @@ export function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true): voi
   }
 }
 
-// Storage methods for Collaborators
 export function getStoredCollaborators(): Collaborator[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.COLLABORATORS);
@@ -203,11 +421,22 @@ export function getStoredCollaborators(): Collaborator[] {
   return DEFAULT_COLLABORATORS;
 }
 
-export function saveStoredCollaborators(collaborators: Collaborator[], syncToServer = true): void {
+export function saveStoredCollaborators(collaborators: Collaborator[], syncToServer = true, syncToFirestore = true): void {
   try {
     localStorage.setItem(STORAGE_KEYS.COLLABORATORS, JSON.stringify(collaborators));
   } catch (e) {
     console.error('Error saving collaborators to localStorage', e);
+  }
+
+  if (syncToFirestore) {
+    try {
+      const docRef = doc(db, 'config', 'collaborators');
+      setDoc(docRef, { list: collaborators }).catch((err) => {
+        console.warn('Failed to sync collaborators to Firestore', err);
+      });
+    } catch (e) {
+      // Silent catch
+    }
   }
 
   if (syncToServer) {
@@ -219,7 +448,7 @@ export function saveStoredCollaborators(collaborators: Collaborator[], syncToSer
   }
 }
 
-// Storage methods for Current in-progress Draft
+// Current in-progress Draft (stored per device in localStorage)
 export function getStoredDraft(sectorId: string, shift: string): Record<string, TaskCompletion> {
   try {
     const saved = localStorage.getItem(`${STORAGE_KEYS.CURRENT_DRAFT}_${sectorId}_${shift}`);
@@ -246,9 +475,20 @@ export function clearStoredDraft(sectorId: string, shift: string): void {
   }
 }
 
-// Submissions / Audits (Stored in Backend Database + IndexedDB Cache)
+// ==========================================
+// SUBMISSIONS & AUDITS
+// ==========================================
+
 export async function saveSubmission(submission: ChecklistSubmission): Promise<void> {
-  // 1. Save in server database
+  // 1. Save in Firestore Cloud Database
+  try {
+    const docRef = doc(db, 'submissions', submission.id);
+    await setDoc(docRef, submission);
+  } catch (e) {
+    console.warn('Firestore submission save error, will fallback to local storage', e);
+  }
+
+  // 2. Save in Node backend API (if running)
   try {
     await fetch('/api/submissions', {
       method: 'POST',
@@ -256,14 +496,14 @@ export async function saveSubmission(submission: ChecklistSubmission): Promise<v
       body: JSON.stringify(submission),
     });
   } catch (e) {
-    console.warn('Backend server unreachable, saved to IndexedDB local cache', e);
+    // Silent catch
   }
 
-  // 2. Also save in IndexedDB
+  // 3. Save in local IndexedDB
   try {
-    const db = await openDB();
+    const idb = await openDB();
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_SUBMISSIONS, 'readwrite');
+      const tx = idb.transaction(STORE_SUBMISSIONS, 'readwrite');
       const store = tx.objectStore(STORE_SUBMISSIONS);
       const req = store.put(submission);
       req.onsuccess = () => resolve();
@@ -275,26 +515,42 @@ export async function saveSubmission(submission: ChecklistSubmission): Promise<v
 }
 
 export async function getAllSubmissions(): Promise<ChecklistSubmission[]> {
-  // Try fetching from server backend database first
+  // 1. Try Firestore Cloud Database
+  try {
+    const collRef = collection(db, 'submissions');
+    const q = query(collRef, orderBy('completedAt', 'desc'));
+    const snapshot = await getDocs(q);
+    const list: ChecklistSubmission[] = [];
+    snapshot.forEach((docSnap) => {
+      list.push(docSnap.data() as ChecklistSubmission);
+    });
+    if (list.length > 0) {
+      syncSubmissionsToIndexedDB(list).catch(() => {});
+      return list;
+    }
+  } catch (e) {
+    // Cloud query fallback
+  }
+
+  // 2. Try Node server backend
   try {
     const res = await fetch('/api/submissions');
     if (res.ok) {
       const serverItems = await res.json();
-      if (Array.isArray(serverItems)) {
-        // Sync local IndexedDB with server items in background
+      if (Array.isArray(serverItems) && serverItems.length > 0) {
         syncSubmissionsToIndexedDB(serverItems).catch(() => {});
         return serverItems;
       }
     }
   } catch (e) {
-    // Fallback to IndexedDB
+    // Silent catch
   }
 
-  // IndexedDB fallback
+  // 3. Local IndexedDB fallback
   try {
-    const db = await openDB();
+    const idb = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_SUBMISSIONS, 'readonly');
+      const tx = idb.transaction(STORE_SUBMISSIONS, 'readonly');
       const store = tx.objectStore(STORE_SUBMISSIONS);
       const req = store.getAll();
       req.onsuccess = () => {
@@ -312,8 +568,8 @@ export async function getAllSubmissions(): Promise<ChecklistSubmission[]> {
 
 async function syncSubmissionsToIndexedDB(submissions: ChecklistSubmission[]) {
   try {
-    const db = await openDB();
-    const tx = db.transaction(STORE_SUBMISSIONS, 'readwrite');
+    const idb = await openDB();
+    const tx = idb.transaction(STORE_SUBMISSIONS, 'readwrite');
     const store = tx.objectStore(STORE_SUBMISSIONS);
     for (const sub of submissions) {
       store.put(sub);
@@ -324,20 +580,28 @@ async function syncSubmissionsToIndexedDB(submissions: ChecklistSubmission[]) {
 }
 
 export async function deleteSubmission(id: string): Promise<void> {
+  // Delete from Firestore Cloud
+  try {
+    const docRef = doc(db, 'submissions', id);
+    await deleteDoc(docRef);
+  } catch (e) {
+    console.warn('Firestore delete error', e);
+  }
+
   // Delete from server backend
   try {
     await fetch(`/api/submissions/${id}`, {
       method: 'DELETE',
     });
   } catch (e) {
-    console.warn('Backend delete error', e);
+    // Silent catch
   }
 
   // Delete from local IndexedDB
   try {
-    const db = await openDB();
+    const idb = await openDB();
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_SUBMISSIONS, 'readwrite');
+      const tx = idb.transaction(STORE_SUBMISSIONS, 'readwrite');
       const store = tx.objectStore(STORE_SUBMISSIONS);
       const req = store.delete(id);
       req.onsuccess = () => resolve();
@@ -352,6 +616,19 @@ export async function updateSubmissionReview(
   id: string,
   review: { status: 'aprovado' | 'pendente' | 'ressalvas'; feedback?: string }
 ): Promise<void> {
+  const reviewPayload = {
+    ...review,
+    reviewedAt: new Date().toISOString(),
+  };
+
+  // Update in Firestore Cloud
+  try {
+    const docRef = doc(db, 'submissions', id);
+    await updateDoc(docRef, { managerReview: reviewPayload });
+  } catch (e) {
+    console.warn('Firestore review update error', e);
+  }
+
   // Update on server backend
   try {
     await fetch(`/api/submissions/${id}/review`, {
@@ -360,23 +637,20 @@ export async function updateSubmissionReview(
       body: JSON.stringify(review),
     });
   } catch (e) {
-    console.warn('Backend update review error', e);
+    // Silent catch
   }
 
   // Update in IndexedDB
   try {
-    const db = await openDB();
+    const idb = await openDB();
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_SUBMISSIONS, 'readwrite');
+      const tx = idb.transaction(STORE_SUBMISSIONS, 'readwrite');
       const store = tx.objectStore(STORE_SUBMISSIONS);
       const getReq = store.get(id);
       getReq.onsuccess = () => {
         const submission = getReq.result as ChecklistSubmission;
         if (submission) {
-          submission.managerReview = {
-            ...review,
-            reviewedAt: new Date().toISOString(),
-          };
+          submission.managerReview = reviewPayload;
           const putReq = store.put(submission);
           putReq.onsuccess = () => resolve();
           putReq.onerror = () => reject(putReq.error);
@@ -397,6 +671,15 @@ export function resetAllDataToDefaults(): void {
   localStorage.removeItem(STORAGE_KEYS.TASKS);
   localStorage.removeItem(STORAGE_KEYS.SETTINGS);
   localStorage.removeItem(STORAGE_KEYS.COLLABORATORS);
+
+  try {
+    setDoc(doc(db, 'config', 'settings'), DEFAULT_SETTINGS);
+    setDoc(doc(db, 'config', 'sectors'), { list: DEFAULT_SECTORS });
+    setDoc(doc(db, 'config', 'tasks'), { list: DEFAULT_TASKS });
+    setDoc(doc(db, 'config', 'collaborators'), { list: DEFAULT_COLLABORATORS });
+  } catch (e) {
+    // Silent catch
+  }
 
   fetch('/api/reset', {
     method: 'POST',
