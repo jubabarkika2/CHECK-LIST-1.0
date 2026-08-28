@@ -630,6 +630,7 @@ export default function App() {
       {/* Staff Identification Modal */}
       <StaffEntryModal
         isOpen={isStaffModalOpen}
+        onClose={() => setIsStaffModalOpen(false)}
         onConfirm={handleStaffConfirm}
         currentName={staffName}
         currentRole={staffRole}
