@@ -163,7 +163,7 @@ export async function fetchSettingsFromServer(): Promise<ManagerSettings | null>
       await setDoc(docRef, defaults);
     }
   } catch (e) {
-    // Cloud fallback
+    console.warn('Firestore settings fetch error:', e);
   }
 
   // 2. Try Node/Express API
@@ -196,7 +196,7 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
       await setDoc(docRef, { list: defaults });
     }
   } catch (e) {
-    // Cloud fallback
+    console.warn('Firestore sectors fetch error:', e);
   }
 
   // 2. Try Node API
@@ -231,7 +231,7 @@ export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
       await setDoc(docRef, { list: defaults });
     }
   } catch (e) {
-    // Cloud fallback
+    console.warn('Firestore tasks fetch error:', e);
   }
 
   // 2. Try Node API
@@ -266,7 +266,7 @@ export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | n
       await setDoc(docRef, { list: defaults });
     }
   } catch (e) {
-    // Cloud fallback
+    console.warn('Firestore collaborators fetch error:', e);
   }
 
   // 2. Try Node API
@@ -301,7 +301,7 @@ export function getStoredSettings(): ManagerSettings {
   return DEFAULT_SETTINGS;
 }
 
-export function saveStoredSettings(settings: ManagerSettings, syncToServer = true, syncToFirestore = true): void {
+export async function saveStoredSettings(settings: ManagerSettings, syncToServer = true, syncToFirestore = true): Promise<void> {
   try {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   } catch (e) {
@@ -311,11 +311,10 @@ export function saveStoredSettings(settings: ManagerSettings, syncToServer = tru
   if (syncToFirestore) {
     try {
       const docRef = doc(db, 'config', 'settings');
-      setDoc(docRef, settings, { merge: true }).catch((err) => {
-        console.warn('Failed to sync settings to Firestore', err);
-      });
+      await setDoc(docRef, settings, { merge: true });
+      console.log('✅ Settings synced to Firestore');
     } catch (e) {
-      // Silent catch
+      console.warn('Failed to sync settings to Firestore', e);
     }
   }
 
@@ -341,7 +340,7 @@ export function getStoredSectors(): Sector[] {
   return DEFAULT_SECTORS;
 }
 
-export function saveStoredSectors(sectors: Sector[], syncToServer = true, syncToFirestore = true): void {
+export async function saveStoredSectors(sectors: Sector[], syncToServer = true, syncToFirestore = true): Promise<void> {
   try {
     localStorage.setItem(STORAGE_KEYS.SECTORS, JSON.stringify(sectors));
   } catch (e) {
@@ -351,11 +350,10 @@ export function saveStoredSectors(sectors: Sector[], syncToServer = true, syncTo
   if (syncToFirestore) {
     try {
       const docRef = doc(db, 'config', 'sectors');
-      setDoc(docRef, { list: sectors }).catch((err) => {
-        console.warn('Failed to sync sectors to Firestore', err);
-      });
+      await setDoc(docRef, { list: sectors });
+      console.log('✅ Sectors synced to Firestore');
     } catch (e) {
-      // Silent catch
+      console.warn('Failed to sync sectors to Firestore', e);
     }
   }
 
@@ -381,7 +379,7 @@ export function getStoredTasks(): TaskTemplate[] {
   return DEFAULT_TASKS;
 }
 
-export function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true, syncToFirestore = true): void {
+export async function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true, syncToFirestore = true): Promise<void> {
   try {
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
   } catch (e) {
@@ -391,11 +389,10 @@ export function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true, sync
   if (syncToFirestore) {
     try {
       const docRef = doc(db, 'config', 'tasks');
-      setDoc(docRef, { list: tasks }).catch((err) => {
-        console.warn('Failed to sync tasks to Firestore', err);
-      });
+      await setDoc(docRef, { list: tasks });
+      console.log('✅ Tasks synced to Firestore');
     } catch (e) {
-      // Silent catch
+      console.warn('Failed to sync tasks to Firestore', e);
     }
   }
 
@@ -421,7 +418,7 @@ export function getStoredCollaborators(): Collaborator[] {
   return DEFAULT_COLLABORATORS;
 }
 
-export function saveStoredCollaborators(collaborators: Collaborator[], syncToServer = true, syncToFirestore = true): void {
+export async function saveStoredCollaborators(collaborators: Collaborator[], syncToServer = true, syncToFirestore = true): Promise<void> {
   try {
     localStorage.setItem(STORAGE_KEYS.COLLABORATORS, JSON.stringify(collaborators));
   } catch (e) {
@@ -431,11 +428,10 @@ export function saveStoredCollaborators(collaborators: Collaborator[], syncToSer
   if (syncToFirestore) {
     try {
       const docRef = doc(db, 'config', 'collaborators');
-      setDoc(docRef, { list: collaborators }).catch((err) => {
-        console.warn('Failed to sync collaborators to Firestore', err);
-      });
+      await setDoc(docRef, { list: collaborators });
+      console.log('✅ Collaborators synced to Firestore');
     } catch (e) {
-      // Silent catch
+      console.warn('Failed to sync collaborators to Firestore', e);
     }
   }
 

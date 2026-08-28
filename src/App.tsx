@@ -399,24 +399,24 @@ export default function App() {
   };
 
   // Manager updates
-  const handleSaveSectors = (newSectors: Sector[]) => {
+  const handleSaveSectors = async (newSectors: Sector[]) => {
     setSectors(newSectors);
-    saveStoredSectors(newSectors);
+    await saveStoredSectors(newSectors);
   };
 
-  const handleSaveTasks = (newTasks: TaskTemplate[]) => {
+  const handleSaveTasks = async (newTasks: TaskTemplate[]) => {
     setTasks(newTasks);
-    saveStoredTasks(newTasks);
+    await saveStoredTasks(newTasks);
   };
 
-  const handleSaveCollaborators = (newCollaborators: Collaborator[]) => {
+  const handleSaveCollaborators = async (newCollaborators: Collaborator[]) => {
     setCollaborators(newCollaborators);
-    saveStoredCollaborators(newCollaborators);
+    await saveStoredCollaborators(newCollaborators);
   };
 
-  const handleSaveSettings = (newSettings: ManagerSettings) => {
+  const handleSaveSettings = async (newSettings: ManagerSettings) => {
     setSettings(newSettings);
-    saveStoredSettings(newSettings);
+    await saveStoredSettings(newSettings);
   };
 
   const handleResetAll = () => {
@@ -700,7 +700,14 @@ export default function App() {
       {completionSummaryState.isOpen && completionSummaryState.submission && (
         <CompletionSummaryModal
           isOpen={completionSummaryState.isOpen}
-          onClose={() => setCompletionSummaryState({ isOpen: false, submission: null })}
+          onClose={() => {
+            setCompletionSummaryState({ isOpen: false, submission: null });
+            setStaffName('');
+            setStaffRole('Colaborador');
+            localStorage.removeItem('rest_active_staff_name');
+            localStorage.removeItem('rest_active_staff_role');
+            handleResetChecklist();
+          }}
           submission={completionSummaryState.submission}
           settings={settings}
           onResetChecklist={handleResetChecklist}
