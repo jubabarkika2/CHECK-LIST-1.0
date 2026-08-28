@@ -13,8 +13,11 @@ import {
   Upload, 
   Check, 
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Cloud,
+  CheckCircle2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { resetAllDataToDefaults } from '../../utils/storage';
 
 interface SettingsTabProps {
@@ -34,12 +37,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [pinMessage, setPinMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
 
   const handleSaveGeneral = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveSettings(formData);
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    showToast('Configurações salvas com sucesso e sincronizadas na nuvem!');
+    setTimeout(() => setSavedSuccess(false), 3500);
   };
 
   const handleChangePin = (e: React.FormEvent) => {
@@ -65,7 +77,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setCurrentPinInput('');
     setNewPinInput('');
     setConfirmPinInput('');
-    setPinMessage({ text: 'PIN alterado com sucesso!', isError: false });
+    setPinMessage({ text: 'PIN alterado e salvo com sucesso na nuvem!', isError: false });
+    showToast('Novo PIN do Gestor salvo com sucesso!');
   };
 
   const handleTestWhatsApp = () => {
@@ -89,8 +102,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       
+      {/* Floating Save Toast Banner */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl shadow-emerald-900/30 flex items-center gap-3 border border-emerald-400/30 text-sm font-bold"
+          >
+            <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-white leading-tight">{toastMessage}</p>
+              <p className="text-[11px] text-emerald-100 font-normal mt-0.5 flex items-center gap-1">
+                <Cloud className="w-3 h-3" /> Alteração gravada no banco de dados
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* General Settings */}
       <form onSubmit={handleSaveGeneral} className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -105,11 +141,39 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
 
           {savedSuccess && (
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
-              <Check className="w-3.5 h-3.5" /> Salvo com Sucesso!
-            </span>
+            <motion.span 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5 shadow-xs"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Salvo com Sucesso!
+            </motion.span>
           )}
         </div>
+
+        {/* Big Alert Banner when saved */}
+        <AnimatePresence>
+          {savedSuccess && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-900 text-xs">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                  <Cloud className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="font-bold block">Configurações Salvas com Sucesso!</strong>
+                  <span className="text-emerald-700 text-[11px]">
+                    Os dados foram atualizados e sincronizados em nuvem para todos os dispositivos.
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>

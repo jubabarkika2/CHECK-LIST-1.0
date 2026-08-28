@@ -22,8 +22,11 @@ import {
   ShieldCheck, 
   Boxes, 
   Sparkles,
-  DollarSign
+  DollarSign,
+  Cloud,
+  CheckCircle2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { getSectorIcon } from '../SectorSelector';
 
 interface TaskSectorManagerTabProps {
@@ -57,6 +60,15 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
 
   const [isSectorModalOpen, setIsSectorModalOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<Sector | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
 
   // Form states for Task
   const [taskTitle, setTaskTitle] = useState('');
@@ -119,6 +131,7 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
           : t
       );
       onSaveTasks(updated);
+      showToast(`Tarefa "${taskTitle.trim()}" atualizada com sucesso!`);
     } else {
       const newTask: TaskTemplate = {
         id: `task-${Date.now()}`,
@@ -132,15 +145,18 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
         criticalNotice: taskCriticalNotice.trim() || undefined,
       };
       onSaveTasks([...tasks, newTask]);
+      showToast(`Nova tarefa "${taskTitle.trim()}" salva com sucesso!`);
     }
 
     setIsTaskModalOpen(false);
   };
 
   const handleDeleteTask = (taskId: string) => {
+    const t = tasks.find((item) => item.id === taskId);
     if (window.confirm('Tem certeza que deseja excluir esta tarefa do checklist?')) {
-      const updated = tasks.filter((t) => t.id !== taskId);
+      const updated = tasks.filter((item) => item.id !== taskId);
       onSaveTasks(updated);
+      showToast(`Tarefa "${t?.title || ''}" removida com sucesso.`);
     }
   };
 
@@ -157,6 +173,7 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
     const reorderedSectorTasks = newTasks.map((t, idx) => ({ ...t, order: idx + 1 }));
     const otherTasks = tasks.filter((t) => t.sectorId !== activeSectorId);
     onSaveTasks([...otherTasks, ...reorderedSectorTasks]);
+    showToast('Ordem das tarefas atualizada e salva na nuvem.');
   };
 
   // Sector Handlers
@@ -195,6 +212,7 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
           : s
       );
       onSaveSectors(updated);
+      showToast(`Setor "${sectorName.trim()}" atualizado com sucesso!`);
     } else {
       const newSec: Sector = {
         id: `sec-${Date.now()}`,
@@ -206,6 +224,7 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
       };
       onSaveSectors([...sectors, newSec]);
       setActiveSectorId(newSec.id);
+      showToast(`Setor "${sectorName.trim()}" criado com sucesso!`);
     }
 
     setIsSectorModalOpen(false);
@@ -216,6 +235,7 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
       alert('Você precisa manter ao menos 1 setor no aplicativo.');
       return;
     }
+    const sec = sectors.find((s) => s.id === secId);
     if (
       window.confirm(
         'Deseja excluir este setor e todas as suas tarefas vinculadas? Esta ação não pode ser desfeita.'
@@ -226,12 +246,36 @@ export const TaskSectorManagerTab: React.FC<TaskSectorManagerTabProps> = ({
       onSaveSectors(updatedSectors);
       onSaveTasks(updatedTasks);
       setActiveSectorId(updatedSectors[0]?.id || '');
+      showToast(`Setor "${sec?.name || ''}" e suas tarefas foram excluídos.`);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       
+      {/* Floating Save Toast Banner */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl shadow-emerald-900/30 flex items-center gap-3 border border-emerald-400/30 text-sm font-bold"
+          >
+            <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-white leading-tight">{toastMessage}</p>
+              <p className="text-[11px] text-emerald-100 font-normal mt-0.5 flex items-center gap-1">
+                <Cloud className="w-3 h-3" /> Alteração gravada no banco de dados
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sector Selection & Creation Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center justify-between gap-3 mb-3">
