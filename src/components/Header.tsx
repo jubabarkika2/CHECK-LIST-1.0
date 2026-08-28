@@ -7,7 +7,8 @@ import {
   UserCheck, 
   ChefHat, 
   Sparkles,
-  PhoneCall
+  PhoneCall,
+  Cloud
 } from 'lucide-react';
 import { ManagerSettings } from '../types';
 
@@ -17,6 +18,7 @@ interface HeaderProps {
   settings: ManagerSettings;
   activeStaffName: string;
   onChangeStaffName: () => void;
+  isCloudSynced?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   settings,
   activeStaffName,
   onChangeStaffName,
+  isCloudSynced = true,
 }) => {
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
@@ -42,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {settings.restaurantName || 'Restaurante & Bistrô'}
                 </h1>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
-                  <Sparkles className="w-3 h-3 mr-1" /> Checklist Operacional
+                  <Cloud className="w-3 h-3 mr-1 text-emerald-400" /> Nuvem Ativa
                 </span>
               </div>
               <p className="text-xs text-slate-400 truncate">
