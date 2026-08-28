@@ -204,10 +204,20 @@ export default function App() {
   // Manager Mode Access Gate
   const handleToggleManagerMode = () => {
     if (isManagerMode) {
-      setIsManagerMode(false);
+      handleExitManagerMode();
     } else {
       setIsPinModalOpen(true);
     }
+  };
+
+  const handleExitManagerMode = () => {
+    setIsManagerMode(false);
+    // Reset employee identification and clear any residual draft so next employee identifies fresh
+    setStaffName('');
+    setStaffRole('Colaborador');
+    localStorage.removeItem('rest_active_staff_name');
+    localStorage.removeItem('rest_active_staff_role');
+    handleResetChecklist();
   };
 
   // Handle staff identification
@@ -467,7 +477,7 @@ export default function App() {
             onSaveSettings={handleSaveSettings}
             onRefreshSubmissions={loadSubmissions}
             onResetAll={handleResetAll}
-            onExitManagerMode={() => setIsManagerMode(false)}
+            onExitManagerMode={handleExitManagerMode}
             onViewPhoto={handleViewPhoto}
             onPrintSubmission={(sub) => setPrintingSubmission(sub)}
           />

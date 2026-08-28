@@ -67,6 +67,10 @@ export const CompletionSummaryModal: React.FC<CompletionSummaryModalProps> = ({
 
   const handleOpenWhatsApp = () => {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    setTimeout(() => {
+      onResetChecklist();
+      onClose();
+    }, 400);
   };
 
   return (
