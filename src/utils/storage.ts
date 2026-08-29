@@ -47,7 +47,7 @@ export function subscribeToSettings(onUpdate: (settings: ManagerSettings) => voi
       if (docSnap.exists()) {
         const data = docSnap.data() as ManagerSettings;
         if (data && data.restaurantName) {
-          saveStoredSettings(data, false, false);
+          saveStoredSettings(data, true, false);
           onUpdate(data);
         }
       }
@@ -67,7 +67,7 @@ export function subscribeToCollaborators(onUpdate: (collaborators: Collaborator[
       if (docSnap.exists()) {
         const data = docSnap.data() as { list?: Collaborator[] };
         if (data && Array.isArray(data.list)) {
-          saveStoredCollaborators(data.list, false, false);
+          saveStoredCollaborators(data.list, true, false);
           onUpdate(data.list);
         }
       }
@@ -87,7 +87,7 @@ export function subscribeToSectors(onUpdate: (sectors: Sector[]) => void): Unsub
       if (docSnap.exists()) {
         const data = docSnap.data() as { list?: Sector[] };
         if (data && Array.isArray(data.list) && data.list.length > 0) {
-          saveStoredSectors(data.list, false, false);
+          saveStoredSectors(data.list, true, false);
           onUpdate(data.list);
         }
       }
@@ -107,7 +107,7 @@ export function subscribeToTasks(onUpdate: (tasks: TaskTemplate[]) => void): Uns
       if (docSnap.exists()) {
         const data = docSnap.data() as { list?: TaskTemplate[] };
         if (data && Array.isArray(data.list) && data.list.length > 0) {
-          saveStoredTasks(data.list, false, false);
+          saveStoredTasks(data.list, true, false);
           onUpdate(data.list);
         }
       }
@@ -154,25 +154,34 @@ export async function fetchSettingsFromServer(): Promise<ManagerSettings | null>
     if (docSnap.exists()) {
       const data = docSnap.data() as ManagerSettings;
       if (data && data.restaurantName) {
-        saveStoredSettings(data, false, false);
+        saveStoredSettings(data, true, false);
         return data;
       }
     } else {
-      // Initialize with defaults if empty in cloud
-      const defaults = getStoredSettings();
-      await setDoc(docRef, defaults);
+      // Initialize with local/default data if empty in cloud
+      const current = getStoredSettings();
+      await setDoc(docRef, current);
+      return current;
     }
   } catch (e) {
     console.warn('Firestore settings fetch error:', e);
   }
 
-  // 2. Try Node/Express API
+  // 2. If localStorage has saved settings, keep them
+  const localSaved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+  if (localSaved) {
+    return getStoredSettings();
+  }
+
+  // 3. Try Node/Express API
   try {
     const res = await fetch('/api/settings');
     if (res.ok) {
       const data = await res.json();
-      saveStoredSettings(data, false, false);
-      return data;
+      if (data && data.restaurantName) {
+        saveStoredSettings(data, false, false);
+        return data;
+      }
     }
   } catch (e) {
     // Silent catch
@@ -188,18 +197,25 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: Sector[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredSectors(data.list, false, false);
+        saveStoredSectors(data.list, true, false);
         return data.list;
       }
     } else {
-      const defaults = getStoredSectors();
-      await setDoc(docRef, { list: defaults });
+      const current = getStoredSectors();
+      await setDoc(docRef, { list: current });
+      return current;
     }
   } catch (e) {
     console.warn('Firestore sectors fetch error:', e);
   }
 
-  // 2. Try Node API
+  // 2. If localStorage has saved sectors, keep them
+  const localSaved = localStorage.getItem(STORAGE_KEYS.SECTORS);
+  if (localSaved) {
+    return getStoredSectors();
+  }
+
+  // 3. Try Node API
   try {
     const res = await fetch('/api/sectors');
     if (res.ok) {
@@ -223,18 +239,25 @@ export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: TaskTemplate[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredTasks(data.list, false, false);
+        saveStoredTasks(data.list, true, false);
         return data.list;
       }
     } else {
-      const defaults = getStoredTasks();
-      await setDoc(docRef, { list: defaults });
+      const current = getStoredTasks();
+      await setDoc(docRef, { list: current });
+      return current;
     }
   } catch (e) {
     console.warn('Firestore tasks fetch error:', e);
   }
 
-  // 2. Try Node API
+  // 2. If localStorage has saved tasks, keep them
+  const localSaved = localStorage.getItem(STORAGE_KEYS.TASKS);
+  if (localSaved) {
+    return getStoredTasks();
+  }
+
+  // 3. Try Node API
   try {
     const res = await fetch('/api/tasks');
     if (res.ok) {
@@ -258,18 +281,25 @@ export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | n
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: Collaborator[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredCollaborators(data.list, false, false);
+        saveStoredCollaborators(data.list, true, false);
         return data.list;
       }
     } else {
-      const defaults = getStoredCollaborators();
-      await setDoc(docRef, { list: defaults });
+      const current = getStoredCollaborators();
+      await setDoc(docRef, { list: current });
+      return current;
     }
   } catch (e) {
     console.warn('Firestore collaborators fetch error:', e);
   }
 
-  // 2. Try Node API
+  // 2. If localStorage has saved collaborators, keep them
+  const localSaved = localStorage.getItem(STORAGE_KEYS.COLLABORATORS);
+  if (localSaved) {
+    return getStoredCollaborators();
+  }
+
+  // 3. Try Node API
   try {
     const res = await fetch('/api/collaborators');
     if (res.ok) {

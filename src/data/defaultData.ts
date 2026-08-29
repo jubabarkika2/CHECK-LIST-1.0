@@ -84,6 +84,16 @@ export const DEFAULT_SECTORS: Sector[] = [
 export const DEFAULT_TASKS: TaskTemplate[] = [
   // SALÃO & GARÇONS
   {
+    id: 'task-sg-0',
+    sectorId: 'salao-garcons',
+    title: 'Abrir todas as portas e janelas para ventilação e acesso',
+    description: 'Destrancar e abrir todas as portas de entrada, saídas de emergência e janelas do salão para circulação de ar.',
+    requiresPhoto: true,
+    shift: 'abertura',
+    order: 0,
+    category: 'Montagem & Setup',
+  },
+  {
     id: 'task-sg-1',
     sectorId: 'salao-garcons',
     title: 'Varrer e passar pano com desinfetante no piso do salão',
