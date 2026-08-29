@@ -55,25 +55,46 @@
       "category": "Montagem & Setup"
     },
     {
+      "id": "task-sg-palco",
+      "sectorId": "salao-garcons",
+      "title": "Desocupar todo palco e varre-lo",
+      "description": "Retirar instrumentos, equipamentos, caixas ou objetos acumulados no palco e realizar a varrição e higienização completa.",
+      "requiresPhoto": true,
+      "shift": "abertura",
+      "order": 1,
+      "category": "Limpeza e Higiene",
+      "criticalNotice": "Verificar se o tablado e as tomadas do palco estão seguros e desobstruídos."
+    },
+    {
+      "id": "task-sg-area-externa",
+      "sectorId": "salao-garcons",
+      "title": "Montar area externa (DECK E RUA)",
+      "description": "Dispor e nivelar mesas e cadeiras no deck e calçada/rua, abrir ombrelones e posicionar lixeiras externas.",
+      "requiresPhoto": true,
+      "shift": "abertura",
+      "order": 2,
+      "category": "Montagem & Setup"
+    },
+    {
+      "id": "task-sg-placa-aberto",
+      "sectorId": "salao-garcons",
+      "title": "Ligar placa aberto",
+      "description": "Acionar a iluminação do letreiro de ABERTO e posicionar cavalete/placa na entrada principal.",
+      "requiresPhoto": false,
+      "shift": "abertura",
+      "order": 3,
+      "category": "Montagem & Setup"
+    },
+    {
       "id": "task-sg-1",
       "sectorId": "salao-garcons",
       "title": "Varrer e passar pano com desinfetante no piso do salão",
       "description": "Garantir que todos os cantos, rodapés e debaixo dos móveis estejam impecáveis.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 1,
+      "order": 4,
       "category": "Limpeza e Higiene",
       "criticalNotice": "Utilizar desinfetante neutro apropriado para o piso."
-    },
-    {
-      "id": "task-sg-2",
-      "sectorId": "salao-garcons",
-      "title": "Montar mesas e cadeiras na área externa com estabilidade",
-      "description": "Dispor mesas conforme o mapa, conferir se estão niveladas e abrir ombrelones/guarda-sóis se o clima permitir.",
-      "requiresPhoto": true,
-      "shift": "abertura",
-      "order": 2,
-      "category": "Montagem & Setup"
     },
     {
       "id": "task-sg-3",
@@ -82,7 +103,7 @@
       "description": "Limpar bicos dos dosadores, verificar validades e completar maionese, ketchup, mostarda, azeite e saleiros.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 3,
+      "order": 5,
       "category": "Atendimento & Salão",
       "criticalNotice": "Limpar as bordas das tampas para evitar acúmulo de resíduos secos."
     },
@@ -366,5 +387,5 @@
   ],
   "submissions": [],
   "version": 1,
-  "lastUpdated": "2026-08-29T16:47:53.771Z"
+  "lastUpdated": "2026-08-29T17:57:07.192Z"
 }

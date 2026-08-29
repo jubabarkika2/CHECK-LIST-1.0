@@ -107,8 +107,19 @@ export function subscribeToTasks(onUpdate: (tasks: TaskTemplate[]) => void): Uns
       if (docSnap.exists()) {
         const data = docSnap.data() as { list?: TaskTemplate[] };
         if (data && Array.isArray(data.list) && data.list.length > 0) {
-          saveStoredTasks(data.list, true, false);
-          onUpdate(data.list);
+          const currentList = [...data.list];
+          let hasNew = false;
+          for (const dt of DEFAULT_TASKS) {
+            if (!currentList.some((t) => t.id === dt.id)) {
+              currentList.unshift(dt);
+              hasNew = true;
+            }
+          }
+          if (hasNew) {
+            setDoc(docRef, { list: currentList }).catch(() => {});
+          }
+          saveStoredTasks(currentList, true, false);
+          onUpdate(currentList);
         }
       }
     }, (error) => {
@@ -154,8 +165,9 @@ export async function fetchSettingsFromServer(): Promise<ManagerSettings | null>
     if (docSnap.exists()) {
       const data = docSnap.data() as ManagerSettings;
       if (data && data.restaurantName) {
-        saveStoredSettings(data, true, false);
-        return data;
+        const merged = { ...DEFAULT_SETTINGS, ...data };
+        saveStoredSettings(merged, true, false);
+        return merged;
       }
     } else {
       // Initialize with local/default data if empty in cloud
@@ -197,8 +209,19 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: Sector[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredSectors(data.list, true, false);
-        return data.list;
+        const currentList = [...data.list];
+        let hasNew = false;
+        for (const ds of DEFAULT_SECTORS) {
+          if (!currentList.some((s) => s.id === ds.id)) {
+            currentList.push(ds);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          await setDoc(docRef, { list: currentList });
+        }
+        saveStoredSectors(currentList, true, false);
+        return currentList;
       }
     } else {
       const current = getStoredSectors();
@@ -232,15 +255,26 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
 }
 
 export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
-  // 1. Try Firestore
+  // 1. Try Firestore with auto-merging of default and server tasks
   try {
     const docRef = doc(db, 'config', 'tasks');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: TaskTemplate[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredTasks(data.list, true, false);
-        return data.list;
+        const currentList = [...data.list];
+        let hasNew = false;
+        for (const dt of DEFAULT_TASKS) {
+          if (!currentList.some((t) => t.id === dt.id)) {
+            currentList.unshift(dt);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          await setDoc(docRef, { list: currentList });
+        }
+        saveStoredTasks(currentList, true, false);
+        return currentList;
       }
     } else {
       const current = getStoredTasks();
@@ -281,8 +315,19 @@ export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | n
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: Collaborator[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        saveStoredCollaborators(data.list, true, false);
-        return data.list;
+        const currentList = [...data.list];
+        let hasNew = false;
+        for (const dc of DEFAULT_COLLABORATORS) {
+          if (!currentList.some((c) => c.id === dc.id)) {
+            currentList.push(dc);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          await setDoc(docRef, { list: currentList });
+        }
+        saveStoredCollaborators(currentList, true, false);
+        return currentList;
       }
     } else {
       const current = getStoredCollaborators();
@@ -362,7 +407,20 @@ export function getStoredSectors(): Sector[] {
     const saved = localStorage.getItem(STORAGE_KEYS.SECTORS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const merged = [...parsed];
+        let hasNew = false;
+        for (const ds of DEFAULT_SECTORS) {
+          if (!merged.some((s) => s.id === ds.id)) {
+            merged.push(ds);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          localStorage.setItem(STORAGE_KEYS.SECTORS, JSON.stringify(merged));
+        }
+        return merged;
+      }
     }
   } catch (e) {
     console.error('Error loading sectors from localStorage', e);
@@ -401,7 +459,20 @@ export function getStoredTasks(): TaskTemplate[] {
     const saved = localStorage.getItem(STORAGE_KEYS.TASKS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const merged = [...parsed];
+        let hasNew = false;
+        for (const dt of DEFAULT_TASKS) {
+          if (!merged.some((t) => t.id === dt.id)) {
+            merged.unshift(dt);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(merged));
+        }
+        return merged;
+      }
     }
   } catch (e) {
     console.error('Error loading tasks from localStorage', e);
@@ -440,7 +511,20 @@ export function getStoredCollaborators(): Collaborator[] {
     const saved = localStorage.getItem(STORAGE_KEYS.COLLABORATORS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const merged = [...parsed];
+        let hasNew = false;
+        for (const dc of DEFAULT_COLLABORATORS) {
+          if (!merged.some((c) => c.id === dc.id)) {
+            merged.push(dc);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          localStorage.setItem(STORAGE_KEYS.COLLABORATORS, JSON.stringify(merged));
+        }
+        return merged;
+      }
     }
   } catch (e) {
     console.error('Error loading collaborators from localStorage', e);
