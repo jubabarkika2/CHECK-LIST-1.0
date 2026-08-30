@@ -51,19 +51,8 @@
       "description": "Destrancar e abrir todas as portas de entrada, saídas de emergência e janelas do salão para circulação de ar.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 0,
-      "category": "Montagem & Setup"
-    },
-    {
-      "id": "task-sg-palco",
-      "sectorId": "salao-garcons",
-      "title": "Desocupar todo palco e varre-lo",
-      "description": "Retirar instrumentos, equipamentos, caixas ou objetos acumulados no palco e realizar a varrição e higienização completa.",
-      "requiresPhoto": true,
-      "shift": "abertura",
       "order": 1,
-      "category": "Limpeza e Higiene",
-      "criticalNotice": "Verificar se o tablado e as tomadas do palco estão seguros e desobstruídos."
+      "category": "Montagem & Setup"
     },
     {
       "id": "task-sg-area-externa",
@@ -76,25 +65,56 @@
       "category": "Montagem & Setup"
     },
     {
+      "id": "task-sg-1",
+      "sectorId": "salao-garcons",
+      "title": "Varrer o salão",
+      "description": "Garantir que todos os cantos, rodapés e debaixo dos móveis estejam impecáveis.",
+      "requiresPhoto": true,
+      "shift": "abertura",
+      "order": 3,
+      "category": "Limpeza e Higiene",
+      "criticalNotice": "Utilizar desinfetante neutro apropriado para o piso."
+    },
+    {
+      "id": "task-sg-palco",
+      "sectorId": "salao-garcons",
+      "title": "Desocupar todo palco e varre-lo",
+      "description": "Retirar instrumentos, equipamentos, caixas ou objetos acumulados no palco e realizar a varrição e higienização completa.",
+      "requiresPhoto": true,
+      "shift": "abertura",
+      "order": 4,
+      "category": "Limpeza e Higiene",
+      "criticalNotice": "Verificar se o tablado e as tomadas do palco estão seguros e desobstruídos."
+    },
+    {
       "id": "task-sg-placa-aberto",
       "sectorId": "salao-garcons",
       "title": "Ligar placa aberto",
       "description": "Acionar a iluminação do letreiro de ABERTO e posicionar cavalete/placa na entrada principal.",
       "requiresPhoto": false,
       "shift": "abertura",
-      "order": 3,
+      "order": 5,
       "category": "Montagem & Setup"
     },
     {
-      "id": "task-sg-1",
+      "id": "task-sg-2",
       "sectorId": "salao-garcons",
-      "title": "Varrer e passar pano com desinfetante no piso do salão",
-      "description": "Garantir que todos os cantos, rodapés e debaixo dos móveis estejam impecáveis.",
+      "title": "Ligar luzes do salão e caixa",
+      "description": "Acender iluminação principal do salão, caixas e luminárias decorativas.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 4,
-      "category": "Limpeza e Higiene",
-      "criticalNotice": "Utilizar desinfetante neutro apropriado para o piso."
+      "order": 6,
+      "category": "Montagem & Setup"
+    },
+    {
+      "id": "task-1788036906164",
+      "sectorId": "salao-garcons",
+      "title": "Ligar tv´s e som",
+      "description": "Músicas ambiente e canais corporativos no volume padrão.",
+      "requiresPhoto": true,
+      "shift": "abertura",
+      "order": 7,
+      "category": "Limpeza e Higiene"
     },
     {
       "id": "task-sg-3",
@@ -103,7 +123,7 @@
       "description": "Limpar bicos dos dosadores, verificar validades e completar maionese, ketchup, mostarda, azeite e saleiros.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 5,
+      "order": 8,
       "category": "Atendimento & Salão",
       "criticalNotice": "Limpar as bordas das tampas para evitar acúmulo de resíduos secos."
     },
@@ -114,7 +134,7 @@
       "description": "Passar pano descartável ou microfibra com álcool 70% em todas as superfícies de contato.",
       "requiresPhoto": false,
       "shift": "abertura",
-      "order": 4,
+      "order": 9,
       "category": "Limpeza e Higiene"
     },
     {
@@ -124,28 +144,28 @@
       "description": "Verificar sabonete líquido, papel toalha, papel higiênico, espelho limpo e esvaziar lixeiras.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 5,
+      "order": 10,
       "category": "Limpeza e Higiene",
       "criticalNotice": "Repor aromatizador de ambiente e conferir trinco da porta."
     },
     {
       "id": "task-sg-6",
       "sectorId": "salao-garcons",
-      "title": "Ligar ar-condicionado (22°C-23°C) e som ambiente no volume padrão",
-      "description": "Garantir clima confortável e playlist corporativa do restaurante ativa.",
+      "title": "Guarda - sol - caso o tempo ajude",
+      "description": "Abrir e travar os guarda-sóis e ombrelones da área externa.",
       "requiresPhoto": false,
       "shift": "abertura",
-      "order": 6,
+      "order": 11,
       "category": "Montagem & Setup"
     },
     {
       "id": "task-sg-7",
       "sectorId": "salao-garcons",
-      "title": "Montar o aparador/estação de garçons",
-      "description": "Polir copos, organizar talheres embrulhados, guardanapos extras, pratos limpos e comandas.",
+      "title": "Ajustar o aparador/estação de garçons",
+      "description": "Organizar talheres embrulhados, guardanapos extras, pratos limpos e comandas.",
       "requiresPhoto": true,
       "shift": "abertura",
-      "order": 7,
+      "order": 12,
       "category": "Montagem & Setup"
     },
     {
@@ -155,7 +175,7 @@
       "description": "Testar conexão Wi-Fi/4G de todas as POS e garantir bateria acima de 80%.",
       "requiresPhoto": false,
       "shift": "abertura",
-      "order": 8,
+      "order": 13,
       "category": "Equipamentos"
     },
     {
@@ -165,7 +185,7 @@
       "description": "Verificar se não há copos ou pratos acumulados nas mesas desocupadas e secar eventuais líquidos derramados.",
       "requiresPhoto": false,
       "shift": "durante",
-      "order": 9,
+      "order": 14,
       "category": "Atendimento & Salão"
     },
     {
@@ -175,7 +195,7 @@
       "description": "Guardar ou encadear mesas e cadeiras externas, desligar aparelhos de ar, som e TV.",
       "requiresPhoto": true,
       "shift": "fechamento",
-      "order": 10,
+      "order": 15,
       "category": "Montagem & Setup"
     },
     {
@@ -387,5 +407,5 @@
   ],
   "submissions": [],
   "version": 1,
-  "lastUpdated": "2026-08-29T17:57:07.192Z"
+  "lastUpdated": "2026-08-30T04:28:52.889Z"
 }

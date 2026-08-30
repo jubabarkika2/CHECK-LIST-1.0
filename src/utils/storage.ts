@@ -100,6 +100,48 @@ export function subscribeToSectors(onUpdate: (sectors: Sector[]) => void): Unsub
   }
 }
 
+export function reconcileTasks(incomingList?: TaskTemplate[]): TaskTemplate[] {
+  if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) {
+    return [...DEFAULT_TASKS];
+  }
+
+  const defaultMap = new Map<string, TaskTemplate>();
+  DEFAULT_TASKS.forEach((t) => defaultMap.set(t.id, t));
+
+  const result: TaskTemplate[] = [];
+  const processedIds = new Set<string>();
+
+  // Process incoming tasks
+  for (const item of incomingList) {
+    if (defaultMap.has(item.id)) {
+      const def = defaultMap.get(item.id)!;
+      result.push({
+        ...def,
+        order: typeof item.order === 'number' ? item.order : def.order,
+      });
+      processedIds.add(item.id);
+    } else {
+      // User custom task
+      result.push(item);
+      processedIds.add(item.id);
+    }
+  }
+
+  // Ensure all default tasks are included
+  for (const def of DEFAULT_TASKS) {
+    if (!processedIds.has(def.id)) {
+      result.push(def);
+      processedIds.add(def.id);
+    }
+  }
+
+  // Sort by sector and order
+  return result.sort((a, b) => {
+    if (a.sectorId !== b.sectorId) return a.sectorId.localeCompare(b.sectorId);
+    return a.order - b.order;
+  });
+}
+
 export function subscribeToTasks(onUpdate: (tasks: TaskTemplate[]) => void): Unsubscribe {
   try {
     const docRef = doc(db, 'config', 'tasks');
@@ -107,20 +149,18 @@ export function subscribeToTasks(onUpdate: (tasks: TaskTemplate[]) => void): Uns
       if (docSnap.exists()) {
         const data = docSnap.data() as { list?: TaskTemplate[] };
         if (data && Array.isArray(data.list) && data.list.length > 0) {
-          const currentList = [...data.list];
-          let hasNew = false;
-          for (const dt of DEFAULT_TASKS) {
-            if (!currentList.some((t) => t.id === dt.id)) {
-              currentList.unshift(dt);
-              hasNew = true;
-            }
-          }
-          if (hasNew) {
-            setDoc(docRef, { list: currentList }).catch(() => {});
-          }
-          saveStoredTasks(currentList, true, false);
-          onUpdate(currentList);
+          const reconciled = reconcileTasks(data.list);
+          saveStoredTasks(reconciled, true, false);
+          onUpdate(reconciled);
+        } else {
+          const initial = getStoredTasks();
+          setDoc(docRef, { list: initial }).catch(() => {});
+          onUpdate(initial);
         }
+      } else {
+        const initial = getStoredTasks();
+        setDoc(docRef, { list: initial }).catch(() => {});
+        onUpdate(initial);
       }
     }, (error) => {
       console.warn('Firestore tasks subscription error:', error);
@@ -255,26 +295,17 @@ export async function fetchSectorsFromServer(): Promise<Sector[] | null> {
 }
 
 export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
-  // 1. Try Firestore with auto-merging of default and server tasks
+  // 1. Try Firestore with auto-reconciliation of default and server tasks
   try {
     const docRef = doc(db, 'config', 'tasks');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data() as { list?: TaskTemplate[] };
       if (data && Array.isArray(data.list) && data.list.length > 0) {
-        const currentList = [...data.list];
-        let hasNew = false;
-        for (const dt of DEFAULT_TASKS) {
-          if (!currentList.some((t) => t.id === dt.id)) {
-            currentList.unshift(dt);
-            hasNew = true;
-          }
-        }
-        if (hasNew) {
-          await setDoc(docRef, { list: currentList });
-        }
-        saveStoredTasks(currentList, true, false);
-        return currentList;
+        const reconciled = reconcileTasks(data.list);
+        await setDoc(docRef, { list: reconciled });
+        saveStoredTasks(reconciled, true, false);
+        return reconciled;
       }
     } else {
       const current = getStoredTasks();
@@ -285,26 +316,28 @@ export async function fetchTasksFromServer(): Promise<TaskTemplate[] | null> {
     console.warn('Firestore tasks fetch error:', e);
   }
 
-  // 2. If localStorage has saved tasks, keep them
-  const localSaved = localStorage.getItem(STORAGE_KEYS.TASKS);
-  if (localSaved) {
-    return getStoredTasks();
-  }
-
-  // 3. Try Node API
+  // 2. Try Node API
   try {
     const res = await fetch('/api/tasks');
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        saveStoredTasks(data, false, false);
-        return data;
+        const reconciled = reconcileTasks(data);
+        saveStoredTasks(reconciled, false, true);
+        return reconciled;
       }
     }
   } catch (e) {
     // Silent catch
   }
-  return null;
+
+  // 3. If localStorage has saved tasks, reconcile and return them
+  const localSaved = localStorage.getItem(STORAGE_KEYS.TASKS);
+  if (localSaved) {
+    return getStoredTasks();
+  }
+
+  return DEFAULT_TASKS;
 }
 
 export async function fetchCollaboratorsFromServer(): Promise<Collaborator[] | null> {
@@ -460,24 +493,19 @@ export function getStoredTasks(): TaskTemplate[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const merged = [...parsed];
-        let hasNew = false;
-        for (const dt of DEFAULT_TASKS) {
-          if (!merged.some((t) => t.id === dt.id)) {
-            merged.unshift(dt);
-            hasNew = true;
-          }
-        }
-        if (hasNew) {
-          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(merged));
-        }
-        return merged;
+        const reconciled = reconcileTasks(parsed);
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(reconciled));
+        return reconciled;
       }
     }
   } catch (e) {
     console.error('Error loading tasks from localStorage', e);
   }
-  return DEFAULT_TASKS;
+  const defaults = [...DEFAULT_TASKS];
+  try {
+    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(defaults));
+  } catch (e) {}
+  return defaults;
 }
 
 export async function saveStoredTasks(tasks: TaskTemplate[], syncToServer = true, syncToFirestore = true): Promise<void> {
